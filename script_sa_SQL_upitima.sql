@@ -1,0 +1,41 @@
+--upit za izlistavanje nekretnina sa svim lokacijskim podacima grupisano u opadajucem redosledu po sifri opstine
+select naziv_opstine as 'Opstina', naziv_naselja as 'Naselje', naziv_ulice as 'Ulica', broj as 'Broj', isnull(n.podbroj, '/') as 'Podbroj', naziv_zone as 'Udaljenost od grada'
+from Nekretnine.Nekretnina n join Nekretnine.Opstina o on(n.opstina_id=o.id_opstine)
+join Nekretnine.Naselje nas on (n.naselje_id=nas.id_naselja)
+join Nekretnine.Ulica u on (n.ulica_id=u.id_ulice)
+join Nekretnine.Zona z on(n.zona_id=z.id_zone)
+order by n.opstina_id desc
+go
+--izlistati sve nekretnine ciji se udeo prodaje na trzistum a za kojeg imamo evidenciju o vlasniku
+select ud.procenat_udela as 'Procenat', ud.dat_nastanka as 'Datum nastanka udela', ud.katast_br as 'Katastarski broj', o.naziv_opstine as 'Opstina', nas.naziv_naselja as 'Naselje', u.naziv_ulice as 'Ulica', n.broj as 'Broj', isnull(n.podbroj, '/') as 'Podbroj', td.naz_dokaza_o_vlasnistvu as 'Dokaz o vlasnistvu'
+from Nekretnine.Udeo ud left join Nekretnine.Nekretnina n on(ud.nekretnina_id=n.id_nekretnine) 
+left join Nekretnine.Ulica u on(n.ulica_id=u.id_ulice)
+left join Nekretnine.Naselje nas on(n.naselje_id=nas.id_naselja)
+left join Nekretnine.Opstina o on(n.opstina_id=o.id_opstine)
+left join Nekretnine.Poseduje pos on(ud.id_udela=pos.udeo_id)
+left join Nekretnine.Vlasnik vl on (pos.vlasnik_id=vl.id_vlasnika)
+left join Nekretnine.Tip_dokaza_o_vlasnistvu td on(ud.dokaz_o_vlasnistvu_id=td.id_dokaza_o_vlasnistvu)
+where pos.vlasnik_id = any(select id_vlasnika from Nekretnine.Vlasnik)
+order by dat_nastanka
+
+--izlistava objekte po opstinama sumirano po tipu objekta
+select op.naziv_opstine as 'Opstina', tob.naziv_tipa_objekta as 'Tip objekta', count(o.nekretnina_id) as 'Broj objekata'
+ from Nekretnine.Nekretnina n left join  Nekretnine.Objekat o on (o.nekretnina_id=n.id_nekretnine) 
+ join Nekretnine.Tip_objekta tob on(o.tip_objekta_id=tob.id_tipa_objekta) join Nekretnine.Opstina op on(n.opstina_id=op.id_opstine)
+ group by op.naziv_opstine, tob.naziv_tipa_objekta
+ 
+--izlistava ukupan broj nekretnina po opstinama 
+select op.naziv_opstine as 'Opstina', count(n.id_nekretnine) as 'Broj nekretnina'
+ from Nekretnine.Nekretnina n  join Nekretnine.Opstina op on(n.opstina_id=op.id_opstine)
+ group by op.naziv_opstine 
+
+ 
+ --izlistava vlasnike udela u nekretnini odredjenom lokacijom i katastarskim brojem 
+ select  procenat_udela as 'Udeo u %', ime_prez_vlasnika as 'Vlasnik', adresa_vlasnika as 'Adresa vlasnika', tel_vlasnika as 'Kontakt', katast_br as 'Katastarski broj', naziv_ulice+', '+naziv_naselja+', '+naziv_opstine as 'Adresa nekretnine'--naziv_ulice as 'Ulica', naziv_naselja as 'Naselje', naziv_opstine as 'Opstina',
+ from Nekretnine.Udeo ud join Nekretnine.Nekretnina n on(ud.nekretnina_id=n.id_nekretnine) 
+ join Nekretnine.Ulica ul on(n.ulica_id=ul.id_ulice) join Nekretnine.Naselje nas on(ul.naselje_id=nas.id_naselja) join Nekretnine.Opstina op on(nas.opstina_id=op.id_opstine)
+ join Nekretnine.Poseduje pos on(ud.id_udela=pos.udeo_id)
+ join Nekretnine.Vlasnik vl on(pos.vlasnik_id=vl.id_vlasnika)
+ order by procenat_udela desc;
+
+ select * from Nekretnine.Vlasnik
